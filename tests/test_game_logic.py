@@ -34,6 +34,7 @@ def test_game_play():
     game.cpu.set_tool(Selection.ROCK)
     finished_round = game.finish_round()
     assert finished_round.winner == game.cpu
+    assert game.get_result() == Result.DRAW
     with pytest.raises(GameError):
         game.start_round()    
     

@@ -151,4 +151,17 @@ class Game:
         self.rounds.append(self.current_round)
         self.current_round = None
         return finished_round
+
+    def get_number_of_wins(self, player: Player):
+        return sum([1 for round in self.rounds if round.winner == player])
+
+    def get_result(self):
+        player_won = self.get_number_of_wins(self.player)
+        cpu_won =  self.get_number_of_wins(self.cpu)
+        if player_won > cpu_won:
+            return Result.WIN
+        elif player_won == cpu_won:
+            return Result.DRAW
+        else:
+            return Result.LOSE
         
