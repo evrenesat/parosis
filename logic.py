@@ -6,7 +6,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
 from time import time
-from typing import Any, DefaultDict, List, Optional, Type, cast
+from typing import Any, DefaultDict, List, Optional, Type, Union, cast
 
 # Exceptions
 
@@ -56,19 +56,11 @@ class Selection(Enum):
     SCISSORS = Tool(crushable=True, can_cut=True)
 
 
-class GameMode(Enum):
-    # player can press the button any time
-    CHANCE = 1
-    # player needs to press the button before time up!
-    TIMEOUT = 2
-    # player needs to press the button when countdown finishes
-    TIMING = 3
-
-
 @dataclass
 class Options:
-    countdown: int = 3
+    countdown_duration: int = 3
     rounds: int = 3
+    threshold: int = 200
 
     def set(self, **kwargs: Any) -> None:
         for key, value in kwargs.items():
@@ -76,10 +68,11 @@ class Options:
                 getattr(self, key)
                 setattr(self, key, value)
             except AttributeError:
-                raise AttributeError("Cannot set a non existing option")
+                raise AttributeError(
+                    "Cannot set non existing option: {}".format(key))
 
 
-@dataclass
+@dataclass(eq=False)
 class Player:
     selection: Optional[Selection] = field(init=False)
     name: str = 'Player'
@@ -129,32 +122,49 @@ class Round:
 
 
 class TimerRound(Round):
-    start_time: float = .0
     timings: DefaultDict[Player, float] = defaultdict(float)
-
-    def __init__(self, player1: Player, player2: Player, options: Options) -> None:
-        self.start_time = time()
-        return super().__init__(player1, player2, options)
 
     def play(self, player: Player, selection: Selection) -> None:
         self.timings[player] = time()
         super().play(player, selection)
 
-    # def check_timings(self):
-    #     self.timings
+    def played_on_time(self, player: Player, end_time: float) -> bool:
+        return (end_time - self.options.threshold
+                < self.timings[player] <
+                end_time + self.options.threshold)
+
+    def check_timings(self) -> bool:
+        end_time = time()
+        p1_on_time = self.played_on_time(self.player1, end_time)
+        p2_on_time = self.played_on_time(self.player2, end_time)
+        if p1_on_time and p2_on_time:
+            return True
+        if p1_on_time:
+            self.winner = self.player1
+        else:
+            self.winner = self.player2
+        return False
 
     def finalize(self) -> None:
-        return super().finalize()
+        if self.check_timings():
+            super().finalize()
+
+
+class GameMode(Enum):
+    # player can press the button any time
+    CHANCE = Round
+    # player needs to press the button when countdown finishes
+    TIMING = TimerRound
 
 
 class Game:
-    def __init__(self, round_type: Type[Round]):
+    def __init__(self, round_type: Union[Type[Round], Type[TimerRound]]):
         self.RoundType = round_type
         self.options = Options()
         self.player = Player()
         self.cpu = Player(name="CPU", auto_play=True)
         self.rounds: List[Round] = []
-        self.current_round: Optional[Round]
+        self.current_round: Union[Round, TimerRound, None]
 
     def set_options(self, **kwargs: Any) -> None:
         self.options.set(**kwargs)
