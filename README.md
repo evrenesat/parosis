@@ -1,4 +1,4 @@
-Parosis is a **Pa**per-**Ro**ck-**S**c**is**sors game
+Parosis is a Paper-Rock-Scissors game
 =====================================================
 
 Motivation

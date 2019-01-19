@@ -45,7 +45,7 @@ def test_normal_game_play() -> None:
 
 def test_timer_game_play() -> None:
     game = Game(TimerRound)
-    game.set_options(rounds=2)
+    game.set_options(rounds=4)
     game.start_round()
     game.play(Selection.PAPER)
     game.play(Selection.ROCK, game.cpu)
@@ -53,8 +53,16 @@ def test_timer_game_play() -> None:
     assert finished_round.winner is game.player
     game.start_round()
     game.play(Selection.PAPER)
-#     assert hasattr(game.current_round, 'timings')
-    game.current_round.timings[game.player] = time() + 999999        
+    # to satisfy mypy
+    assert isinstance(game.current_round, TimerRound)
+    game.current_round.timings[game.player] = time() + 999999
     game.play(Selection.ROCK, game.cpu)
     finished_round = game.finish_round()
     assert finished_round.winner is game.cpu
+    assert game.is_running()
+    game.start_round()
+    game.current_round.timings[game.player] = time() + 999999
+    game.current_round.timings[game.cpu] = time() + 999999  # normally impossible
+    finished_round = game.finish_round()
+    assert finished_round.winner is None
+    assert finished_round.draw is True

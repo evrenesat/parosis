@@ -133,20 +133,22 @@ class TimerRound(Round):
                 < self.timings[player] <
                 end_time + self.options.threshold)
 
-    def check_timings(self) -> bool:
+    def find_winner_by_timing(self) -> bool:
         end_time = time()
         p1_on_time = self.played_on_time(self.player1, end_time)
         p2_on_time = self.played_on_time(self.player2, end_time)
         if p1_on_time and p2_on_time:
-            return True
+            return False
         if p1_on_time:
             self.winner = self.player1
-        else:
+        elif p2_on_time:
             self.winner = self.player2
-        return False
+        else:
+            self.draw = True
+        return bool(self.winner or self.draw)
 
     def finalize(self) -> None:
-        if self.check_timings():
+        if not self.find_winner_by_timing():
             super().finalize()
 
 
@@ -176,7 +178,7 @@ class Game:
         assert self.current_round is not None
         self.current_round.play(player or self.player, selection)
 
-    def start_round(self) -> Round:
+    def start_round(self) -> Union[Round, TimerRound]:
         if self.is_running():
             self.current_round = self.RoundType(
                 player1=self.player, player2=self.cpu, options=self.options)
