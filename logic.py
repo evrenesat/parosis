@@ -1,12 +1,12 @@
 """
 
 """
-from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Any, Union, cast, Type
-from enum import Enum
 import random
-from time import time
 from collections import defaultdict
+from dataclasses import dataclass, field
+from enum import Enum
+from time import time
+from typing import Any, DefaultDict, List, Optional, Type, cast
 
 # Exceptions
 
@@ -39,19 +39,18 @@ class Tool:
         assert result is not None
         return result
 
-    def draw(self, tool: "Tool") -> Union[Result, None]:
+    def draw(self, tool: "Tool") -> Optional[Result]:
         return Result.DRAW if self == tool else None
 
-    def lose(self, tool: "Tool") -> Union[Result, None]:
+    def lose(self, tool: "Tool") -> Optional[Result]:
         return Result.LOSE if (
             (self.cuttable and tool.can_cut) or
             (self.crushable and tool.can_crush) or
             (self.wrappable and tool.can_wrap)
-            ) else None
+        ) else None
 
 
 class Selection(Enum):
-    NO_CHOICE = None
     ROCK = Tool(wrappable=True, can_crush=True)
     PAPER = Tool(cuttable=True, can_wrap=True)
     SCISSORS = Tool(crushable=True, can_cut=True)
@@ -89,18 +88,19 @@ class Player:
     def get_random_selection(self) -> Selection:
         if self.auto_play:
             self.selection = random.choice(list(Selection))
-            return self.selection 
+            return self.selection
         else:
             raise PlayerError("Player did not made any choice")
 
     def get_selected_tool(self) -> Tool:
-        return (self.selection or self.get_random_selection()).value
+        return cast(Tool, (self.selection or self.get_random_selection()).value)
 
     def set_selection(self, selection_selection: Selection) -> None:
         self.selection = selection_selection
 
     def reset_selection(self) -> None:
         self.selection = None
+
 
 class Round:
     def __init__(self, player1: Player, player2: Player, options: Options):
@@ -130,7 +130,7 @@ class Round:
 
 class TimerRound(Round):
     start_time: float = .0
-    timings: defaultdict = defaultdict(float)
+    timings: DefaultDict[Player, float] = defaultdict(float)
 
     def __init__(self, player1: Player, player2: Player, options: Options) -> None:
         self.start_time = time()
