@@ -106,7 +106,8 @@ class Round:
         self.player2.reset_selection()
 
     def play(self, player: Player, selection: Selection) -> None:
-        player.set_selection(selection)
+        if not player.selection:
+            player.set_selection(selection)
 
     def finalize(self) -> None:
         tool_of_p1 = self.player1.get_selected_tool()

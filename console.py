@@ -23,7 +23,7 @@ class ConsoleGame:
         self.options = game.options
         self.previous_round = game.start_round()
         self.player_images = {game.cpu: art.ROBOT, game.player: art.PLAYER}
-        self.last_play_time = .0
+        self.last_action_time = .0
 
     def show_players(self) -> None:
         winner = self.game.winner or self.previous_round.winner
@@ -47,7 +47,7 @@ class ConsoleGame:
 
     def start_next_round(self) -> None:
         if (not self.game.is_running() or
-                time.time() - self.last_play_time < self.WAIT_BEFORE_NEXT_ROUND):
+                time.time() - self.last_action_time < self.WAIT_BEFORE_NEXT_ROUND):
             return
         if self.game.player_played():
             self.game.start_round()
@@ -58,16 +58,18 @@ class ConsoleGame:
 
     def show_hands(self) -> None:
         X_COORD = 25  # chr
-        Y_COORD_PLAYER = 17
+        Y_COORD_PLAYER = 19
         Y_COORD_CPU = 3
         self.show_art(HANDS.get(self.game.player.selection, ''), Y_COORD_PLAYER, X_COORD)
         self.show_art(HANDS.get(self.game.cpu.selection, ''), Y_COORD_CPU, X_COORD)
 
     def play(self, selection: Selection) -> None:
+        if not self.game.is_running():
+            return
         if not self.game.current_round:
             self.game.start_round()
         self.game.play(selection)
-        self.last_play_time = time.time()
+        self.last_action_time = time.time()
 
     def handle_selection(self, c: int) -> None:
         if c in [ord('p'), curses.KEY_LEFT]:
@@ -107,33 +109,36 @@ class ConsoleGame:
 
 class TimerGame(ConsoleGame):
     def __init__(self, game: Game) -> None:
-        self.last_play_time = .0
         self.round_duration = game.options.countdown_duration
         super().__init__(game)
 
     def finalize_round(self) -> None:
         self.round_duration -= self.LOOP_SLEEP
         if self.round_duration >= 0:
-            self.show_string(str(self.round_duration), 30, 50)
+            self.show_string(str("{:10.1f}".format(self.round_duration)), 30, 50)
         if self.game.current_round and self.round_duration <= 0:
             self.previous_round = self.game.finish_round()
-            self.last_play_time = time.time()
+            self.last_action_time = time.time()
 
     def start_next_round(self) -> None:
 
         if (not self.game.is_running() or
-                time.time() - self.last_play_time < self.WAIT_BEFORE_NEXT_ROUND):
+                time.time() - self.last_action_time < self.WAIT_BEFORE_NEXT_ROUND):
             return
         self.game.start_round()
         self.round_duration = self.options.countdown_duration
-        self.last_play_time = time.time()
+        self.last_action_time = time.time()
+
+    def play(self, selection: Selection) -> None:
+        if self.game.current_round:
+            self.game.play(selection)
 
 
 if __name__ == "__main__":
 
-    # ConsoleGame(game).start_game()
-    # game = Game(Round)
-    game = Game(TimerRound)
-    game.set_options(countdown_duration=2, threshold=0.8)
-    TimerGame(game).start_game()
+    game = Game(Round)
+    ConsoleGame(game).start_game()
+    # game = Game(TimerRound)
+    # game.set_options(countdown_duration=2, threshold=0.9)
+    # TimerGame(game).start_game()
     print("Game result for the player: {} ".format(game.get_player_result()))
