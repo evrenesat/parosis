@@ -164,6 +164,7 @@ class Game:
         self.RoundType = round_type
         self.options = Options()
         self.player = Player()
+        self.winner: Optional[Player] = None
         self.cpu = Player(name="CPU", auto_play=True)
         self.rounds: List[Round] = []
         self.current_round: Union[Round, TimerRound, None]
@@ -171,8 +172,14 @@ class Game:
     def set_options(self, **kwargs: Any) -> None:
         self.options.set(**kwargs)
 
+    def get_mode(self) -> GameMode:
+        return GameMode.CHANCE if self.RoundType is Round else GameMode.TIMING
+
     def is_running(self) -> bool:
         return len(self.rounds) < self.options.rounds
+
+    def player_played(self) -> bool:
+        return bool(self.player.selection)
 
     def play(self, selection: Selection, player: Optional[Player] = None) -> None:
         assert self.current_round is not None
@@ -186,18 +193,31 @@ class Game:
         else:
             raise GameError("Game already finished")
 
+    def check_for_winner(self) -> None:
+        if self.is_running():
+            return
+        player_won = self.get_number_of_wins(self.player)
+        cpu_won = self.get_number_of_wins(self.cpu)
+        if player_won == cpu_won:
+            return
+        if player_won > cpu_won:
+            self.winner = self.player
+        else:
+            self.winner = self.cpu
+
     def finish_round(self) -> Round:
         assert self.current_round is not None
         finished_round = self.current_round
         finished_round.finalize()
         self.rounds.append(finished_round)
         self.current_round = None
+        self.check_for_winner()
         return finished_round
 
     def get_number_of_wins(self, player: Player) -> int:
         return sum([1 for round in self.rounds if round.winner == player])
 
-    def get_result(self) -> Result:
+    def get_player_result(self) -> Result:
         player_won = self.get_number_of_wins(self.player)
         cpu_won = self.get_number_of_wins(self.cpu)
         if player_won > cpu_won:

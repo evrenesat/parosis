@@ -38,7 +38,7 @@ def test_normal_game_play() -> None:
     game.play(Selection.ROCK, game.cpu)
     finished_round = game.finish_round()
     assert finished_round.winner == game.cpu
-    assert game.get_result() == Result.DRAW
+    assert game.get_player_result() == Result.DRAW
     with pytest.raises(GameError):
         game.start_round()
 
