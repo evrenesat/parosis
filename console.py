@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 import art
 from logic import Game, GameMode, Player, Result, Round, Selection
 
-SELECTIONS = {
+HANDS = {
     Selection.PAPER: art.PAPER,
     Selection.ROCK: art.ROCK,
     Selection.SCISSORS: art.SCISSORS
@@ -15,6 +15,8 @@ SELECTIONS = {
 
 
 class CGame:
+    WAIT_BEFORE_NEXT_ROUND_OR_QUIT = 2
+
     def __init__(self, game: Game) -> None:
         self.selection = ''
         self.game = game
@@ -23,6 +25,7 @@ class CGame:
         self.result_visuals = self.prepare_result_visuals()
         self.previous_round = game.start_round()
         self.player_images = {game.cpu: art.ROBOT, game.player: art.PLAYER}
+        self.last_play_time = .0
 
     def prepare_result_visuals(self) -> Dict[Player, Dict[Result, str]]:
         return {
@@ -62,30 +65,41 @@ class CGame:
         self.show_art(art.ROBOT)
 
     def handle_game(self) -> None:
+        if time.time() - self.last_play_time < self.WAIT_BEFORE_NEXT_ROUND_OR_QUIT:
+            return
         if not self.game.is_running():
             time.sleep(2)
             sys.exit()
         if self.game.player_played():
             self.game.start_round()
 
-
     def finalize_round(self) -> None:
         if self.use_timer:
             pass  # TODO
-        elif self.game.player_played():
+        elif self.game.player_played() and self.game.current_round:
             self.previous_round = self.game.finish_round()
 
+    def show_hands(self) -> None:
+        players_hand = self.game.player.selection
+        robots_hand = self.game.cpu.selection
+        if players_hand:
+            self.show_art(HANDS[players_hand], 17, 25)
+        if robots_hand:
+            self.show_art(HANDS[robots_hand], 3, 25)
+
+    def play(self, selection: Selection) -> None:
+        if not self.game.current_round:
+            self.game.start_round()
+        self.game.play(selection)
+        self.last_play_time = time.time()
 
     def handle_selection(self, c: int) -> None:
-        hand = None
         if c in [ord('p'), curses.KEY_LEFT]:
-            hand = Selection.PAPER
-        if c in [ord('r'), curses.KEY_UP]:
-            hand = Selection.ROCK
-        if c in [ord('s'), curses.KEY_RIGHT]:
-            hand = Selection.SCISSORS
-        if hand:
-            self.game.play(hand)
+            self.play(Selection.PAPER)
+        elif c in [ord('r'), curses.KEY_UP]:
+            self.play(Selection.ROCK)
+        elif c in [ord('s'), curses.KEY_RIGHT]:
+            self.play(Selection.SCISSORS)
 
     def main(self, screen: Any) -> None:
         self.screen = screen
@@ -96,10 +110,10 @@ class CGame:
             curses.flushinp()
             screen.clear()
             self.show_players()
+            self.show_hands()
             self.handle_selection(c)
             self.finalize_round()
             self.handle_game()
-
             time.sleep(0.1)
 
 
