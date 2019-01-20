@@ -58,9 +58,9 @@ class Selection(Enum):
 
 @dataclass
 class Options:
-    countdown_duration: int = 3
+    countdown_duration: float = 3.0
     rounds: int = 3
-    threshold: int = 200
+    threshold: float = 0.2
 
     def set(self, **kwargs: Any) -> None:
         for key, value in kwargs.items():
@@ -129,9 +129,10 @@ class TimerRound(Round):
         super().play(player, selection)
 
     def played_on_time(self, player: Player, end_time: float) -> bool:
-        return (end_time - self.options.threshold
-                < self.timings[player] <
-                end_time + self.options.threshold)
+        NO_TIME = 0
+        return player.auto_play or (end_time - self.options.threshold
+                                    < self.timings.get(player, NO_TIME) <
+                                    end_time + self.options.threshold)
 
     def find_winner_by_timing(self) -> bool:
         end_time = time()
@@ -152,13 +153,6 @@ class TimerRound(Round):
             super().finalize()
 
 
-class GameMode(Enum):
-    # player can press the button any time
-    CHANCE = Round
-    # player needs to press the button when countdown finishes
-    TIMING = TimerRound
-
-
 class Game:
     def __init__(self, round_type: Union[Type[Round], Type[TimerRound]]):
         self.RoundType = round_type
@@ -171,9 +165,6 @@ class Game:
 
     def set_options(self, **kwargs: Any) -> None:
         self.options.set(**kwargs)
-
-    def get_mode(self) -> GameMode:
-        return GameMode.CHANCE if self.RoundType is Round else GameMode.TIMING
 
     def is_running(self) -> bool:
         return len(self.rounds) < self.options.rounds
