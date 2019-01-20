@@ -65,11 +65,9 @@ class CGame:
         self.show_art(art.ROBOT)
 
     def handle_game(self) -> None:
-        if time.time() - self.last_play_time < self.WAIT_BEFORE_NEXT_ROUND_OR_QUIT:
+        if (not self.game.is_running() or
+                time.time() - self.last_play_time < self.WAIT_BEFORE_NEXT_ROUND_OR_QUIT):
             return
-        if not self.game.is_running():
-            time.sleep(2)
-            sys.exit()
         if self.game.player_played():
             self.game.start_round()
 
@@ -80,12 +78,8 @@ class CGame:
             self.previous_round = self.game.finish_round()
 
     def show_hands(self) -> None:
-        players_hand = self.game.player.selection
-        robots_hand = self.game.cpu.selection
-        if players_hand:
-            self.show_art(HANDS[players_hand], 17, 25)
-        if robots_hand:
-            self.show_art(HANDS[robots_hand], 3, 25)
+        self.show_art(HANDS.get(self.game.player.selection, ''), 17, 25)
+        self.show_art(HANDS.get(self.game.cpu.selection, ''), 3, 25)
 
     def play(self, selection: Selection) -> None:
         if not self.game.current_round:
@@ -105,9 +99,10 @@ class CGame:
         self.screen = screen
         screen.nodelay(True)
         screen.clear()
-        while True:
+        last_loop_is_required = True
+        while self.game.is_running() or last_loop_is_required:
+            last_loop_is_required = self.game.is_running()
             c = screen.getch()
-            curses.flushinp()
             screen.clear()
             self.show_players()
             self.show_hands()
@@ -115,7 +110,13 @@ class CGame:
             self.finalize_round()
             self.handle_game()
             time.sleep(0.1)
+        # this additional getch call required to
+        # print the results of the last round
+        screen.getch()
+        time.sleep(2)
 
 
 if __name__ == "__main__":
-    CGame(Game(GameMode.CHANCE.value)).start_game()
+    game = Game(GameMode.CHANCE.value)
+    CGame(game).start_game()
+    print("Game result: {} ".format(game.get_player_result()))
