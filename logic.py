@@ -60,7 +60,7 @@ class Selection(Enum):
 class Options:
     countdown_duration: float = 3.0
     rounds: int = 3
-    threshold: float = 0.2
+    threshold: float = 0.5
 
     def set(self, **kwargs: Any) -> None:
         for key, value in kwargs.items():
@@ -174,8 +174,8 @@ class Game:
         return bool(self.player.selection)
 
     def play(self, selection: Selection, player: Optional[Player] = None) -> None:
-        assert self.current_round is not None
-        self.current_round.play(player or self.player, selection)
+        if self.current_round:
+            self.current_round.play(player or self.player, selection)
 
     def start_round(self) -> Union[Round, TimerRound]:
         if self.is_running():

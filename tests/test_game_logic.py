@@ -1,9 +1,14 @@
-from time import time
+import sys
+from os.path import dirname, abspath
+sys.path.append(dirname(dirname(abspath(__file__))))
 
 import pytest
-
-from ..logic import (Game, GameError, Options, PlayerError, Result, Round,
-                     Selection, TimerRound)
+import art
+from game import ConsoleGame, TimerGame
+from logic import (Game, GameError, Options, PlayerError, Result, Round,
+                   Selection, TimerRound)
+import pytest
+from time import time
 
 
 def test_options() -> None:
@@ -64,5 +69,45 @@ def test_timer_game_play() -> None:
     game.current_round.timings[game.player] = time() + 999999
     game.current_round.timings[game.cpu] = time() + 999999  # normally impossible
     finished_round = game.finish_round()
-    assert finished_round.winner is None
-    assert finished_round.draw is True
+    assert finished_round.winner is game.cpu
+    assert finished_round.draw is False
+
+
+class FakeConsoleGame(ConsoleGame):
+
+    def flush_output(self) -> None:
+        self._output = []
+
+    def show_string(self, s: str, y: int, x: int) -> None:
+        self._output.append(s)
+
+    def show_art(self, s: str, y: int, x: int) -> None:
+        self._output.append(s)
+
+    def get_output(self) -> str:
+        return "|".join(self._output)
+
+
+def test_normal_game() -> None:
+    game = Game(Round)
+    c = FakeConsoleGame(game)
+    c.flush_output()
+    c.show_stats()
+    assert c.get_output() == 'Round: 1 / 3|Wins: 0|Wins: 0'
+    c.handle_selection(ord('p'))
+    game.play(Selection.PAPER, game.cpu)
+    assert game.player.selection == Selection.PAPER
+    c.flush_output()
+    c.show_hands()
+    assert c.get_output() == "{}|{}".format(art.PAPER, art.PAPER)
+    c.finalize_round()
+    c.start_next_round()
+    c.handle_selection(ord('s'))
+    game.play(Selection.PAPER, game.cpu)
+    c.last_action_time = .0
+    c.finalize_round()
+    c.flush_output()
+    c.show_stats()
+    assert c.get_output() == 'Round: 2 / 3|Wins: 0|Wins: 1'
+
+

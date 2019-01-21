@@ -1,10 +1,12 @@
+import sys
 import curses
+import argparse
 import time
 from curses import wrapper
-from typing import Any
+from typing import Any, Type
 
 import art
-from logic import Game, TimerRound, Round, Selection
+from logic import Game, TimerRound, Round, Selection, Options
 
 HANDS = {
     Selection.PAPER: art.PAPER,
@@ -34,16 +36,13 @@ class ConsoleGame:
     def start_game(self) -> None:
         wrapper(self.main)
 
-    def show_art(self, gesture: str, y: int = 0, x: int = 0) -> None:
-        for yy, line in enumerate(gesture.splitlines(), 2):
+    def show_art(self, s: str, y: int = 0, x: int = 0) -> None:
+        for yy, line in enumerate(s.splitlines(), 2):
             self.screen.addstr(y + yy, x + 2, line)
 
     def show_string(self, s: str, y: int, x: int) -> None:
         for col, c in enumerate(s):
             self.screen.addch(y, x+col, c)
-
-    def show_robot(self, selection: Selection) -> None:
-        self.show_art(art.ROBOT)
 
     def start_next_round(self) -> None:
         if (not self.game.is_running() or
@@ -90,9 +89,14 @@ class ConsoleGame:
         screen.nodelay(True)
         screen.clear()
         last_loop_is_required = True
+        self.show_string("Can be played with [P] [R] [S] or Arrow keys. [Q] to quit", 2, 0)
+        c = screen.getch()
+        time.sleep(2)
         while self.game.is_running() or last_loop_is_required:
             last_loop_is_required = self.game.is_running()
             c = screen.getch()
+            if c == ord('q'):
+                sys.exit()
             screen.clear()
             self.show_stats()
             self.show_players()
@@ -104,7 +108,7 @@ class ConsoleGame:
         # this additional getch call required to
         # print the results of the last round
         screen.getch()
-        time.sleep(5)
+        time.sleep(2)
 
 
 class TimerGame(ConsoleGame):
@@ -121,24 +125,44 @@ class TimerGame(ConsoleGame):
             self.last_action_time = time.time()
 
     def start_next_round(self) -> None:
-
         if (not self.game.is_running() or
+                self.game.current_round or
                 time.time() - self.last_action_time < self.WAIT_BEFORE_NEXT_ROUND):
             return
         self.game.start_round()
         self.round_duration = self.options.countdown_duration
-        self.last_action_time = time.time()
 
     def play(self, selection: Selection) -> None:
-        if self.game.current_round:
-            self.game.play(selection)
+        self.game.play(selection)
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--timer", action="store_true",
+                        help="Play against both time and chance. You must make a choice before "
+                        "the countdown is over. Threshold can be set with --threshold parameter.")
 
-    game = Game(Round)
-    ConsoleGame(game).start_game()
-    # game = Game(TimerRound)
-    # game.set_options(countdown_duration=2, threshold=0.9)
-    # TimerGame(game).start_game()
-    print("Game result for the player: {} ".format(game.get_player_result()))
+    parser.add_argument("--rounds",
+                        help="Set number of rounds. Default is {}.".format(Options.rounds))
+
+    parser.add_argument("--threshold", help="Selection acceptance threshold for timer mode. "
+                        "Default is {} sec.".format(Options.threshold))
+
+    parser.add_argument("--countdown", help="Countdown duration for timer mode. "
+                        "Default is {} sec.".format(Options.countdown_duration))
+    args = parser.parse_args()
+
+    ui: Type[ConsoleGame] = ConsoleGame
+    round: Type[Round] = Round
+    if args.timer:
+        round = TimerRound
+        ui = TimerGame
+    game = Game(round)
+    if args.rounds:
+        game.set_options(rounds=float(args.rounds))
+    if args.threshold:
+        game.set_options(threshold=float(args.threshold))
+    if args.countdown:
+        game.set_options(countdown_duration=int(args.countdown))
+    ui(game).start_game()
+    print("\nGame result for the player: {} \n".format(game.get_player_result().name))
