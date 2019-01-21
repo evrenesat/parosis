@@ -109,5 +109,3 @@ def test_normal_game() -> None:
     c.flush_output()
     c.show_stats()
     assert c.get_output() == 'Round: 2 / 3|Wins: 0|Wins: 1'
-
-

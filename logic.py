@@ -1,14 +1,9 @@
-"""
-
-"""
 import random
 from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
 from time import time
 from typing import Any, DefaultDict, List, Optional, Type, Union, cast
-
-# Exceptions
 
 
 class PlayerError(Exception):

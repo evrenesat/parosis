@@ -6,7 +6,7 @@ Motivation
 
 Primary goal of this project is getting more experienced on some Python related stuff:
 
-- Type hints and mypy
+- typing library and mypy.
 - Dataclasses
 - Enum
 - curses library.
@@ -33,6 +33,8 @@ I plan to implement a browser based UI probably using aiohttp or Quart.
 
 Game play
 ---------
+
+You can check `screencast.gif` file to get an idea about what it looks like.
 
 - Number of rounds can be specified using `--rounds` parameter.
 
