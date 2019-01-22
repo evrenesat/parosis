@@ -16,7 +16,7 @@ HANDS = {
 
 
 class ConsoleGame:
-    WAIT_BEFORE_NEXT_ROUND = 2
+    WAIT_BEFORE_CONTINUE = 2 #  sec
     LOOP_SLEEP = 0.1
 
     def __init__(self, game: Game) -> None:
@@ -46,7 +46,7 @@ class ConsoleGame:
 
     def start_next_round(self) -> None:
         if (not self.game.is_running() or
-                time.time() - self.last_action_time < self.WAIT_BEFORE_NEXT_ROUND):
+                time.time() - self.last_action_time < self.WAIT_BEFORE_CONTINUE):
             return
         if self.game.player_played():
             self.game.start_round()
@@ -91,7 +91,7 @@ class ConsoleGame:
         last_loop_is_required = True
         self.show_string("Can be played with [P] [R] [S] or Arrow keys. [Q] to quit", 2, 0)
         c = screen.getch()
-        time.sleep(2)
+        time.sleep(self.WAIT_BEFORE_CONTINUE)
         while self.game.is_running() or last_loop_is_required:
             last_loop_is_required = self.game.is_running()
             c = screen.getch()
@@ -108,7 +108,7 @@ class ConsoleGame:
         # this additional getch call required to
         # print the results of the last round
         screen.getch()
-        time.sleep(2)
+        time.sleep(self.WAIT_BEFORE_CONTINUE)
 
 
 class TimerGame(ConsoleGame):
@@ -127,7 +127,7 @@ class TimerGame(ConsoleGame):
     def start_next_round(self) -> None:
         if (not self.game.is_running() or
                 self.game.current_round or
-                time.time() - self.last_action_time < self.WAIT_BEFORE_NEXT_ROUND):
+                time.time() - self.last_action_time < self.WAIT_BEFORE_CONTINUE):
             return
         self.game.start_round()
         self.round_duration = self.options.countdown_duration
