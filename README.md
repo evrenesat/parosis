@@ -21,18 +21,18 @@ Requirements
 - Python 3.7
 - A terminal that properly supports curses interface.
 
-How install
+Game play
 -----------
 
-Currently only curses based console interface is implemented.
-Not tested on Windows, probably will not work.
+Currently only curses based console interface is implemented which should work on Linux and MacOS.
+
+![screencast](https://github.com/evrenesat/parosis/blob/master/screencast.gif?raw=true)
+
 
 Run `python game.py --help` to get more info about possible options.
 
 I plan to implement a browser based UI probably using aiohttp or Quart.
 
-Game play
----------
 
 You can check `screencast.gif` file to get an idea about what it looks like.
 
@@ -44,6 +44,6 @@ Can be played in two different modes:
   - Player can make a choice any time.
 - Chance and timing:
   - Pass `--timer` parameter to enable countdown timer.
-  - Player needs to make a choice just before the countdown finishes (within a certain threshold). Check `--help` to see the default threshold.
-  - Countdown time can be set using `--countdown` parameter.
+  - Player needs to make a choice just before the countdown finishes but within a certain threshold. 
+  - Countdown time can be set using `--countdown` parameter. Check `--help` to see the default threshold.
   - Threshold can be set using `--threshold` parameter.
